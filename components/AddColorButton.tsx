@@ -1,4 +1,4 @@
-import { TouchableOpacity } from "react-native";
+import { Pressable } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import * as React from "react";
 import { useNavigation } from "@react-navigation/native";
@@ -13,13 +13,13 @@ export type NewColorNavigationProp = StackNavigationProp<
 export const AddColorButton = () => {
   const navigation = useNavigation<NewColorNavigationProp>();
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={() => {
         navigation.navigate("NewColor");
       }}
       style={{ margin: 10 }}
     >
       <Feather name="plus" size={24} color="black" />
-    </TouchableOpacity>
+    </Pressable>
   );
 };

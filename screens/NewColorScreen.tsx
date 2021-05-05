@@ -1,5 +1,5 @@
 import * as React from "react";
-import { View, StyleSheet, Dimensions, Image } from "react-native";
+import { View, StyleSheet, Dimensions, Image, Pressable } from "react-native";
 import Constants from "expo-constants";
 import { PanGestureHandler } from "react-native-gesture-handler";
 import Animated, {
@@ -46,6 +46,14 @@ const cartesianToPolar = (x: number, y: number) => {
   };
 };
 
+const polarToCartesian = (theta: number, radius: number) => {
+  "worklet";
+  return {
+    x: COLOR_PICKER_RADIUS + radius * Math.cos((theta * Math.PI) / 180),
+    y: COLOR_PICKER_RADIUS + radius * Math.sin((theta * Math.PI) / 180),
+  };
+};
+
 const radius = (
   xOffset: number,
   yOffset: number,
@@ -73,19 +81,27 @@ const radius = (
   }
 };
 
-const polarToColor = (
-  x: number,
-  y: number,
-  { hueOffset = 0, light = 1 } = { hueOffset: 0, light: 1 }
-) => {
+const offsetToPolar = (xOffset: number, yOffset: number) => {
   "worklet";
-  const coordinates = radius(x, y);
+  const coordinates = radius(xOffset, yOffset);
   const polar = cartesianToPolar(
     coordinates.x - COLOR_PICKER_RADIUS,
     coordinates.y - COLOR_PICKER_RADIUS
   );
-  const theta = polar.theta < 0 ? 360 + polar.theta : polar.theta;
-  return `hsla(${Math.round(theta + hueOffset)}, ${Math.round(
+  return {
+    radius: polar.radius,
+    theta: polar.theta < 0 ? 360 + polar.theta : polar.theta,
+  };
+};
+
+const polarToColor = (
+  xOffset: number,
+  yOffset: number,
+  { hueOffset = 0, light = 1 } = { hueOffset: 0, light: 1 }
+) => {
+  "worklet";
+  const polar = offsetToPolar(xOffset, yOffset);
+  return `hsla(${Math.round((polar.theta + hueOffset) % 360)}, ${Math.round(
     polar.radius
   )}%, 60%, ${light})`;
 };
@@ -198,7 +214,20 @@ export const NewColorScreen = () => {
         <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
           {lodashRange(0, DEFAULT_COLORS_NUM).map((index) => {
             return (
-              <Dot key={index} index={index} moveX={moveX} moveY={moveY} />
+              <Dot
+                onSelect={(x, y) => {
+                  moveX.value = x;
+                  moveY.value = y;
+                  setSelectedCoordinate({
+                    x,
+                    y,
+                  });
+                }}
+                key={index}
+                index={index}
+                moveX={moveX}
+                moveY={moveY}
+              />
             );
           })}
         </View>
@@ -211,19 +240,36 @@ const Dot = ({
   index,
   moveX,
   moveY,
+  onSelect,
 }: {
   index: number;
   moveX: Animated.SharedValue<number>;
   moveY: Animated.SharedValue<number>;
+  onSelect: (theta: number, radius: number) => void;
 }) => {
+  const hueOffset = index * (360 / DEFAULT_COLORS_NUM);
   const dotColor = useAnimatedStyle(() => {
     return {
       backgroundColor: polarToColor(moveX.value, moveY.value, {
-        hueOffset: index * (360 / DEFAULT_COLORS_NUM),
+        hueOffset,
       }),
     };
   });
-  return <Animated.View style={[styles.dot, dotColor]} />;
+
+  return (
+    <Pressable
+      onPress={() => {
+        const polar = offsetToPolar(moveX.value, moveY.value);
+        const coordinates = polarToCartesian(
+          polar.theta + hueOffset,
+          polar.radius
+        );
+        onSelect(coordinates.x, coordinates.y);
+      }}
+    >
+      <Animated.View style={[styles.dot, dotColor]} />
+    </Pressable>
+  );
 };
 
 const styles = StyleSheet.create({

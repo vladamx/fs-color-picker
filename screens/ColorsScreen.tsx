@@ -1,5 +1,5 @@
 import * as React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { FlatList, StyleSheet } from "react-native";
 import { useAppSelector } from "../types";
 import { useNavigation } from "@react-navigation/native";
@@ -17,14 +17,14 @@ const ListEmpty = () => {
       }}
     >
       <Text>There is no colors in your colors list.</Text>
-      <TouchableOpacity
+      <Pressable
         style={{ marginTop: 10 }}
         onPress={() => {
           navigation.navigate("NewColor");
         }}
       >
         <Text style={{ color: "blue" }}>Add color</Text>
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 };
