@@ -14,7 +14,6 @@ export const usePersistColor = (
   const isScreenFocussed = useIsFocused();
   const dispatch = useAppDispatch();
   useEffect(() => {
-    console.log(selectedColor);
     dispatch(setSelectedColor(selectedColor));
   }, [selectedColor]);
 
