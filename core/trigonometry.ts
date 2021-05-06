@@ -45,15 +45,14 @@ export const radius = (
     Math.pow(x - circleRadius, 2) + Math.pow(y - circleRadius, 2)
   );
   if (radius >= circleRadius) {
-    const normalizedX = Math.sqrt(
-      Math.pow(COLOR_PICKER_RADIUS, 2) - Math.pow(Math.abs(y - circleRadius), 2)
+    const polar = cartesianToPolar(
+      xOffset - COLOR_PICKER_RADIUS,
+      yOffset - COLOR_PICKER_RADIUS
     );
+    const coordinates = polarToCartesian(polar.theta, circleRadius);
     return {
-      x:
-        xOffset < circleRadius
-          ? Math.abs(normalizedX - circleRadius)
-          : normalizedX + circleRadius,
-      y: y,
+      x: coordinates.x,
+      y: coordinates.y,
     };
   } else {
     return { x, y };
