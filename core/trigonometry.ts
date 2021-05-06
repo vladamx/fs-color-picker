@@ -5,17 +5,6 @@ const windowWidth = Dimensions.get("window").width;
 // we could pass color picker radius as a prop
 export const COLOR_PICKER_RADIUS = windowWidth / 3.5;
 
-export const range = (value: number, start: number, end: number) => {
-  "worklet";
-  if (value < start) {
-    return start;
-  } else if (value > end) {
-    return end;
-  } else {
-    return value;
-  }
-};
-
 export const cartesianToPolar = (x: number, y: number) => {
   "worklet";
   const radius = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
@@ -39,24 +28,21 @@ export const radius = (
   circleRadius = COLOR_PICKER_RADIUS
 ) => {
   "worklet";
-  const x = range(xOffset, 0, circleRadius * 2);
-  const y = range(yOffset, 0, circleRadius * 2);
   const radius = Math.sqrt(
-    Math.pow(x - circleRadius, 2) + Math.pow(y - circleRadius, 2)
+    Math.pow(xOffset - circleRadius, 2) + Math.pow(yOffset - circleRadius, 2)
   );
-  if (radius >= circleRadius) {
-    const polar = cartesianToPolar(
-      xOffset - COLOR_PICKER_RADIUS,
-      yOffset - COLOR_PICKER_RADIUS
-    );
-    const coordinates = polarToCartesian(polar.theta, circleRadius);
-    return {
-      x: coordinates.x,
-      y: coordinates.y,
-    };
-  } else {
-    return { x, y };
-  }
+  const polar = cartesianToPolar(
+    xOffset - COLOR_PICKER_RADIUS,
+    yOffset - COLOR_PICKER_RADIUS
+  );
+  const coordinates = polarToCartesian(
+    polar.theta,
+    radius >= circleRadius ? circleRadius : radius
+  );
+  return {
+    x: coordinates.x,
+    y: coordinates.y,
+  };
 };
 
 export const offsetToPolar = (xOffset: number, yOffset: number) => {
