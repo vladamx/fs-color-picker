@@ -58,24 +58,28 @@ export const LightSlider = ({
         color={color}
         name="lightbulb"
         size={28}
-        style={[{ marginHorizontal: 20, marginVertical: -12 }]}
+        style={[{ marginTop: 40 - 15 }]}
       />
       <PanGestureHandler onGestureEvent={_onSliderMove}>
-        <Animated.View style={[styles.slider, { backgroundColor: color }]}>
-          <LinearGradient
-            colors={["black", "black", "transparent"]}
-            start={{ x: -1, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.slider}
-          />
-          <Animated.View style={[styles.thumb, thumbTransformColor]} />
+        <Animated.View
+          style={{ justifyContent: "center", height: 80, padding: 20 }}
+        >
+          <Animated.View style={[styles.slider, { backgroundColor: color }]}>
+            <LinearGradient
+              colors={["black", "black", "transparent"]}
+              start={{ x: -1, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.slider}
+            />
+            <Animated.View style={[styles.thumb, thumbTransformColor]} />
+          </Animated.View>
         </Animated.View>
       </PanGestureHandler>
       <MaterialCommunityIcons
         color={color}
         name="lightbulb-on-outline"
         size={28}
-        style={[{ marginHorizontal: 20, marginVertical: -14 }]}
+        style={[{ marginTop: 40 - 15 }]}
       />
     </Animated.View>
   );
