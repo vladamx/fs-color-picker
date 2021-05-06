@@ -1,5 +1,5 @@
 import * as React from "react";
-import { View, StyleSheet, Dimensions, Image, Pressable } from "react-native";
+import { View, StyleSheet } from "react-native";
 import Constants from "expo-constants";
 import { PanGestureHandler } from "react-native-gesture-handler";
 import Animated, {
@@ -8,114 +8,24 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
 } from "react-native-reanimated";
-import { range as lodashRange } from "lodash-es";
-import { LightSlider } from "./LightSlider";
-import { useEffect, useMemo, useState } from "react";
-import { useIsFocused } from "@react-navigation/native";
-import { useAppDispatch } from "../types";
+import { LightSlider } from "../components/LightSlider";
 import {
-  addColor,
-  resetSelectedColor,
-  setSelectedColor,
-} from "../colorPickerSlice";
+  COLOR_PICKER_RADIUS,
+  polarToColor,
+  radius,
+} from "../core/trigonometry";
+import { PickerWheel } from "../components/PickerWheel";
+import { Colors } from "../components/Colors";
+import { useColorPicker } from "../hooks/useColorPicker";
 
-const windowWidth = Dimensions.get("window").width;
-
-const DEFAULT_COLORS_NUM = 5;
 const THUMB_RADIUS = 10;
 
-const COLOR_PICKER_RADIUS = windowWidth / 3.5;
-
-const range = (value: number, start: number, end: number) => {
-  "worklet";
-  if (value < start) {
-    return start;
-  } else if (value > end) {
-    return end;
-  } else {
-    return value;
-  }
-};
-
-const cartesianToPolar = (x: number, y: number) => {
-  "worklet";
-  const radius = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
-  return {
-    radius,
-    theta: (Math.atan2(y, x) * 180) / Math.PI,
-  };
-};
-
-const polarToCartesian = (theta: number, radius: number) => {
-  "worklet";
-  return {
-    x: COLOR_PICKER_RADIUS + radius * Math.cos((theta * Math.PI) / 180),
-    y: COLOR_PICKER_RADIUS + radius * Math.sin((theta * Math.PI) / 180),
-  };
-};
-
-const radius = (
-  xOffset: number,
-  yOffset: number,
-  circleRadius = COLOR_PICKER_RADIUS
-) => {
-  "worklet";
-  const x = range(xOffset, 0, circleRadius * 2);
-  const y = range(yOffset, 0, circleRadius * 2);
-  const radius = Math.sqrt(
-    Math.pow(x - circleRadius, 2) + Math.pow(y - circleRadius, 2)
-  );
-  if (radius >= circleRadius) {
-    const normalizedX = Math.sqrt(
-      Math.pow(COLOR_PICKER_RADIUS, 2) - Math.pow(Math.abs(y - circleRadius), 2)
-    );
-    return {
-      x:
-        xOffset < circleRadius
-          ? Math.abs(normalizedX - circleRadius)
-          : normalizedX + circleRadius,
-      y: y,
-    };
-  } else {
-    return { x, y };
-  }
-};
-
-const offsetToPolar = (xOffset: number, yOffset: number) => {
-  "worklet";
-  const coordinates = radius(xOffset, yOffset);
-  const polar = cartesianToPolar(
-    coordinates.x - COLOR_PICKER_RADIUS,
-    coordinates.y - COLOR_PICKER_RADIUS
-  );
-  return {
-    radius: polar.radius,
-    theta: polar.theta < 0 ? 360 + polar.theta : polar.theta,
-  };
-};
-
-const polarToColor = (
-  xOffset: number,
-  yOffset: number,
-  { hueOffset = 0, light = 1 } = { hueOffset: 0, light: 1 }
-) => {
-  "worklet";
-  const polar = offsetToPolar(xOffset, yOffset);
-  return `hsla(${Math.round((polar.theta + hueOffset) % 360)}, ${Math.round(
-    polar.radius
-  )}%, 60%, ${light})`;
-};
-
 export const NewColorScreen = () => {
-  const moveX = useSharedValue(styles.circle2.width / 1.5);
-  const moveY = useSharedValue(styles.circle2.height / 1.5);
-  const [light, setLight] = useState(0.5);
-  const isFocussed = useIsFocused();
-  const dispatch = useAppDispatch();
-  const [selectedCoordinate, setSelectedCoordinate] = useState({
-    x: moveX.value,
-    y: moveY.value,
-  });
+  // NOTE: This could be further refactored to single responsibility components(with own state)
+  // For the sake of simplicity I decided to not pass state around too much
+  const moveX = useSharedValue((COLOR_PICKER_RADIUS * 2) / 1.5);
+  const moveY = useSharedValue((COLOR_PICKER_RADIUS * 2) / 1.5);
+
   const _onMove = useAnimatedGestureHandler({
     onActive: (event, _ctx) => {
       moveX.value = event.x;
@@ -125,19 +35,12 @@ export const NewColorScreen = () => {
       runOnJS(setSelectedCoordinate)({ x: moveX.value, y: moveY.value });
     },
   });
-
-  const selectedColor = useMemo(() => {
-    return polarToColor(moveX.value, moveY.value);
-  }, [selectedCoordinate]);
-
-  useEffect(() => {
-    console.log(selectedColor);
-    dispatch(setSelectedColor(selectedColor));
-  }, [selectedColor]);
-
-  const selectedColorWithLight = useMemo(() => {
-    return polarToColor(moveX.value, moveY.value, { light });
-  }, [selectedColor, light]);
+  const {
+    setSelectedCoordinate,
+    setLight,
+    selectedColorWithLight,
+    selectedColor,
+  } = useColorPicker(moveX, moveY);
 
   const cursorTransformColor = useAnimatedStyle(() => {
     const coordinates = radius(moveX.value, moveY.value);
@@ -154,13 +57,6 @@ export const NewColorScreen = () => {
     };
   });
 
-  useEffect(() => {
-    if (!isFocussed) {
-      dispatch(addColor(selectedColorWithLight));
-      dispatch(resetSelectedColor());
-    }
-  }, [isFocussed]);
-
   return (
     <Animated.View style={styles.container}>
       <View style={styles.sheet}>
@@ -173,31 +69,8 @@ export const NewColorScreen = () => {
           />
           <PanGestureHandler onGestureEvent={_onMove}>
             <Animated.View style={[styles.circle2]}>
-              <Image
-                style={{
-                  width: styles.circle2.width,
-                  height: styles.circle2.height,
-                  transform: [
-                    {
-                      rotate: "180deg",
-                    },
-                  ],
-                }}
-                source={require("../assets/images/picker.png")}
-              />
-              <Animated.View
-                style={[
-                  {
-                    ...StyleSheet.absoluteFillObject,
-                    width: THUMB_RADIUS * 2,
-                    height: THUMB_RADIUS * 2,
-                    borderRadius: THUMB_RADIUS,
-                    borderWidth: 2,
-                    borderColor: "white",
-                  },
-                  cursorTransformColor,
-                ]}
-              />
+              <PickerWheel />
+              <Animated.View style={[styles.thumb, cursorTransformColor]} />
             </Animated.View>
           </PanGestureHandler>
         </Animated.View>
@@ -211,64 +84,20 @@ export const NewColorScreen = () => {
       <Animated.View
         style={[styles.colors, { backgroundColor: selectedColorWithLight }]}
       >
-        <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
-          {lodashRange(0, DEFAULT_COLORS_NUM).map((index) => {
-            return (
-              <Dot
-                onSelect={(x, y) => {
-                  moveX.value = x;
-                  moveY.value = y;
-                  setSelectedCoordinate({
-                    x,
-                    y,
-                  });
-                }}
-                key={index}
-                index={index}
-                moveX={moveX}
-                moveY={moveY}
-              />
-            );
-          })}
-        </View>
+        <Colors
+          moveX={moveX}
+          moveY={moveY}
+          onColorSelect={(x, y) => {
+            moveX.value = x;
+            moveY.value = y;
+            setSelectedCoordinate({
+              x,
+              y,
+            });
+          }}
+        />
       </Animated.View>
     </Animated.View>
-  );
-};
-
-const Dot = ({
-  index,
-  moveX,
-  moveY,
-  onSelect,
-}: {
-  index: number;
-  moveX: Animated.SharedValue<number>;
-  moveY: Animated.SharedValue<number>;
-  onSelect: (theta: number, radius: number) => void;
-}) => {
-  const hueOffset = index * (360 / DEFAULT_COLORS_NUM);
-  const dotColor = useAnimatedStyle(() => {
-    return {
-      backgroundColor: polarToColor(moveX.value, moveY.value, {
-        hueOffset,
-      }),
-    };
-  });
-
-  return (
-    <Pressable
-      onPress={() => {
-        const polar = offsetToPolar(moveX.value, moveY.value);
-        const coordinates = polarToCartesian(
-          polar.theta + hueOffset,
-          polar.radius
-        );
-        onSelect(coordinates.x, coordinates.y);
-      }}
-    >
-      <Animated.View style={[styles.dot, dotColor]} />
-    </Pressable>
   );
 };
 
@@ -277,14 +106,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: Constants.statusBarHeight,
     backgroundColor: "#ffffff",
-  },
-  dot: {
-    width: 45,
-    height: 45,
-    borderColor: "white",
-    borderWidth: 1,
-    backgroundColor: "red",
-    borderRadius: 45 / 2,
   },
   wheel: {
     width: COLOR_PICKER_RADIUS * 2 + 80,
@@ -317,6 +138,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-evenly",
     alignItems: "center",
     flex: 4,
+  },
+  thumb: {
+    ...StyleSheet.absoluteFillObject,
+    width: THUMB_RADIUS * 2,
+    height: THUMB_RADIUS * 2,
+    borderRadius: THUMB_RADIUS,
+    borderWidth: 2,
+    borderColor: "white",
   },
   colors: {
     flex: 1,

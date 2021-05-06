@@ -37,7 +37,7 @@ export const LightSlider = ({
     },
     onEnd: (event, _ctx) => {
       const value = (sliderRange(sliderMoveX.value) * 100) / 160 / 100;
-      runOnJS(onChange)(1 - Math.round((value + Number.EPSILON) * 100) / 100);
+      runOnJS(onChange)(1 - value);
     },
   });
 
