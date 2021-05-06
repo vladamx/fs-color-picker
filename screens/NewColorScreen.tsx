@@ -18,6 +18,10 @@ import { PickerWheel } from "../components/PickerWheel";
 import { Colors } from "../components/Colors";
 import { useColorPicker } from "../hooks/useColorPicker";
 
+import { Dimensions } from "react-native";
+
+const windowWidth = Dimensions.get("window").width;
+
 const THUMB_RADIUS = 10;
 
 export const NewColorScreen = () => {
@@ -25,6 +29,13 @@ export const NewColorScreen = () => {
   // For the sake of simplicity I decided to not pass state around too much
   const moveX = useSharedValue((COLOR_PICKER_RADIUS * 2) / 1.5);
   const moveY = useSharedValue((COLOR_PICKER_RADIUS * 2) / 1.5);
+
+  const {
+    setSelectedCoordinate,
+    setLight,
+    selectedColorWithLight,
+    selectedColor,
+  } = useColorPicker(moveX, moveY);
 
   const _onMove = useAnimatedGestureHandler({
     onActive: (event, _ctx) => {
@@ -35,12 +46,6 @@ export const NewColorScreen = () => {
       runOnJS(setSelectedCoordinate)({ x: moveX.value, y: moveY.value });
     },
   });
-  const {
-    setSelectedCoordinate,
-    setLight,
-    selectedColorWithLight,
-    selectedColor,
-  } = useColorPicker(moveX, moveY);
 
   const cursorTransformColor = useAnimatedStyle(() => {
     const coordinates = radius(moveX.value, moveY.value);
@@ -81,6 +86,9 @@ export const NewColorScreen = () => {
           }}
         />
       </View>
+      <Animated.View
+        style={[styles.oval, { backgroundColor: selectedColorWithLight }]}
+      />
       <Animated.View
         style={[styles.colors, { backgroundColor: selectedColorWithLight }]}
       >
@@ -138,6 +146,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-evenly",
     alignItems: "center",
     flex: 4,
+  },
+  oval: {
+    width: 50,
+    height: 25,
+    borderBottomStartRadius: 25,
+    borderBottomRightRadius: 25,
+    left: windowWidth / 2 - 25,
+    transform: [{ scaleX: windowWidth / 50 }, { rotate: "180deg" }],
   },
   thumb: {
     ...StyleSheet.absoluteFillObject,
