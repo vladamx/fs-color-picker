@@ -3,10 +3,13 @@ import { View, StyleSheet } from "react-native";
 import Constants from "expo-constants";
 import { PanGestureHandler } from "react-native-gesture-handler";
 import Animated, {
+  Easing,
   runOnJS,
   useAnimatedGestureHandler,
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
+  withTiming,
 } from "react-native-reanimated";
 import { LightSlider } from "../components/LightSlider";
 import {
@@ -29,6 +32,8 @@ export const NewColorScreen = () => {
   // For the sake of simplicity I decided to not pass state around too much
   const moveX = useSharedValue((COLOR_PICKER_RADIUS * 2) / 1.5);
   const moveY = useSharedValue((COLOR_PICKER_RADIUS * 2) / 1.5);
+  const scaleCircle = useSharedValue(1);
+  const scaleCircle1 = useSharedValue(1);
 
   const {
     setSelectedCoordinate,
@@ -38,13 +43,37 @@ export const NewColorScreen = () => {
   } = useColorPicker(moveX, moveY);
 
   const _onMove = useAnimatedGestureHandler({
+    onStart: () => {
+      scaleCircle.value = withTiming(-0.9, { duration: 200 });
+      scaleCircle1.value = withTiming(-0.95, {
+        duration: 1000,
+        easing: Easing.in(Easing.cubic),
+      });
+    },
     onActive: (event, _ctx) => {
       moveX.value = event.x;
       moveY.value = event.y;
     },
     onEnd: (event, _ctx) => {
       runOnJS(setSelectedCoordinate)({ x: moveX.value, y: moveY.value });
+      scaleCircle.value = withSpring(1);
+      scaleCircle1.value = withSpring(1);
     },
+  });
+
+  const circleTransformOnPan = useAnimatedStyle(() => {
+    return {
+      transform: [{ scaleX: scaleCircle.value }, { scaleY: scaleCircle.value }],
+    };
+  });
+
+  const circle1TransformOnPan = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { scaleX: scaleCircle1.value },
+        { scaleY: scaleCircle1.value },
+      ],
+    };
   });
 
   const cursorTransformColor = useAnimatedStyle(() => {
@@ -67,10 +96,18 @@ export const NewColorScreen = () => {
       <View style={styles.sheet}>
         <Animated.View style={styles.wheel}>
           <Animated.View
-            style={[styles.circle, { backgroundColor: selectedColorWithLight }]}
+            style={[
+              styles.circle,
+              { backgroundColor: selectedColorWithLight },
+              circleTransformOnPan,
+            ]}
           />
           <Animated.View
-            style={[styles.circle1, { backgroundColor: selectedColor }]}
+            style={[
+              styles.circle1,
+              { backgroundColor: selectedColor },
+              circle1TransformOnPan,
+            ]}
           />
           <PanGestureHandler onGestureEvent={_onMove}>
             <Animated.View style={[styles.circle2]}>
