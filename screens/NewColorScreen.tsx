@@ -15,7 +15,7 @@ import { LightSlider } from "../components/LightSlider";
 import {
   COLOR_PICKER_RADIUS,
   polarToColor,
-  radius,
+  circleOffset,
 } from "../core/trigonometry";
 import { PickerWheel } from "../components/PickerWheel";
 import { Colors } from "../components/Colors";
@@ -77,7 +77,7 @@ export const NewColorScreen = () => {
   });
 
   const cursorTransformColor = useAnimatedStyle(() => {
-    const coordinates = radius(moveX.value, moveY.value);
+    const coordinates = circleOffset(moveX.value, moveY.value);
     return {
       backgroundColor: polarToColor(moveX.value, moveY.value),
       transform: [

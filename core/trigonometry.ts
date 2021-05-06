@@ -22,7 +22,7 @@ export const polarToCartesian = (theta: number, radius: number) => {
   };
 };
 
-export const radius = (
+export const circleOffset = (
   xOffset: number,
   yOffset: number,
   circleRadius = COLOR_PICKER_RADIUS
@@ -35,26 +35,22 @@ export const radius = (
     xOffset - COLOR_PICKER_RADIUS,
     yOffset - COLOR_PICKER_RADIUS
   );
-  const coordinates = polarToCartesian(
-    polar.theta,
-    radius >= circleRadius ? circleRadius : radius
-  );
+  const normalizedRadius = radius >= circleRadius ? circleRadius : radius;
+  const coordinates = polarToCartesian(polar.theta, normalizedRadius);
   return {
     x: coordinates.x,
     y: coordinates.y,
+    theta: polar.theta,
+    radius: normalizedRadius,
   };
 };
 
 export const offsetToPolar = (xOffset: number, yOffset: number) => {
   "worklet";
-  const coordinates = radius(xOffset, yOffset);
-  const polar = cartesianToPolar(
-    coordinates.x - COLOR_PICKER_RADIUS,
-    coordinates.y - COLOR_PICKER_RADIUS
-  );
+  const { radius, theta } = circleOffset(xOffset, yOffset);
   return {
-    radius: polar.radius,
-    theta: polar.theta < 0 ? 360 + polar.theta : polar.theta,
+    radius: radius,
+    theta: theta < 0 ? 360 + theta : theta,
   };
 };
 
